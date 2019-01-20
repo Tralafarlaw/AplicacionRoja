@@ -1,6 +1,7 @@
 package tralafarlaw.com.redapp;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.view.View;
@@ -13,8 +14,36 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class TrackActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+    NavigationView navigationView;
+    Menu names;
+    DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
+    FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+    final String mail = firebaseUser.getEmail();
+    final String user_name = mail.substring(0,mail.length()-10);
+    List<String> nombres = new ArrayList<>();
+    MapView map;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,8 +67,80 @@ public class TrackActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        names = navigationView.getMenu();
+        init();
+        instanciar_nombres();
+        instaciar_marcadores();
+    }
+    public void instaciar_marcadores (){
+        reference.child("blue").child("conductores").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot data :
+                        dataSnapshot.getChildren()) {
+                    String n = data.child("Nombre").getValue(String.class);
+                    for (String a :
+                            nombres) {
+                        boolean sw = true;
+                        if(a.equals(n)){
+                            Double lat, lon;
+                            lat = data.child("Lat").getValue(Double.class);
+                            lon = data.child("Lon").getValue(Double.class);
+                            for (Overlay overlay :
+                                    map.getOverlays()) {
+                                Marker marker = (Marker) overlay;
+                                if(marker.getTitle().equals(n)){
+                                    marker.setPosition(new GeoPoint(lat,lon));
+                                    sw = false;
+                                }
+
+                            }
+                            if(sw){
+                                Marker mk = new Marker(map);
+                                mk.setPosition(new GeoPoint(lat,lon));
+                                mk.setTitle(n);
+                                mk.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                                map.getOverlays().add(mk);
+                                map.invalidate();
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
+    public void init (){
+        map =(MapView) findViewById(R.id.map);
+        map.setMultiTouchControls(true);
+        map.getController().setZoom(9.3);
+        map.setTileSource(TileSourceFactory.MAPNIK);
+
+    }
+    public void instanciar_nombres (){
+        reference.child("red").child("usuarios").child(user_name).addListenerForSingleValueEvent(
+                new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot data :
+                        dataSnapshot.getChildren()) {
+                    String q = data.getValue(String.class);
+                    names.add(q);
+                    nombres.add(q);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
     }
 
     @Override
@@ -78,22 +179,14 @@ public class TrackActivity extends AppCompatActivity
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
-        int id = item.getItemId();
-
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        String tile = item.getTitle().toString();
+        for (Overlay overlay:
+        map.getOverlays()){
+            Marker mk = (Marker) overlay;
+            if(mk.getTitle().equals(tile)){
+                map.getController().setCenter(mk.getPosition());
+            }
         }
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
