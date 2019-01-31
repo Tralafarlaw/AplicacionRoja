@@ -116,7 +116,7 @@ public class TrackActivity extends AppCompatActivity
             map.getController().setCenter(mk.getPosition());
             break;
         }
-        rv.setAdapter(new MenuAdapter(nombres, map));
+        rv.setAdapter(new MenuAdapter(nombres, map,(DrawerLayout) findViewById(R.id.drawer_layout)));
         rv.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         rv.setHasFixedSize(true);
     }

@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -25,14 +26,17 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
 
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
     List<String> nombres;
     MapView mapa;
     Switch sw;
-    public MenuAdapter (List<String> nombre, MapView mapView){
+    DrawerLayout drawer;
+    public MenuAdapter (List<String> nombre, MapView mapView,DrawerLayout dw){
         nombres = nombre;
         mapa = mapView;
+        drawer=dw;
     }
     @NonNull
     @Override
@@ -43,10 +47,8 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull final ElHolder elHolder, int i) {
-        elHolder.aSwitch.setText(nombres.get(i));
-        FirebaseUser auth = FirebaseAuth.getInstance().getCurrentUser();
-        String string = auth.getEmail();
-        String nombre = string.substring(0,string.length()-10);
+        elHolder.nm.setText(nombres.get(i));
+        elHolder.aSwitch.setChecked(true);
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("/blue/conductores/");
         ref.child(nombres.get(i)).child("Status").addValueEventListener(new ValueEventListener() {
             @Override
@@ -77,10 +79,11 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
                             }
                         }
                     }
+                    mapa.invalidate();
 
             }
         });
-        elHolder.aSwitch.setOnClickListener(new View.OnClickListener() {
+        elHolder.nm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 for (Overlay overlay:
@@ -90,7 +93,6 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
                         mapa.getController().setCenter(mk.getPosition());
                     }
                 }
-                DrawerLayout drawer = (DrawerLayout) elHolder.itemView.findViewById(R.id.drawer_layout);
                 drawer.closeDrawer(GravityCompat.START);
             }
         });
@@ -105,10 +107,12 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
     public class ElHolder extends RecyclerView.ViewHolder{
         Switch aSwitch;
         ImageView img;
+        TextView nm;
         public ElHolder(@NonNull View itemView) {
             super(itemView);
             aSwitch = (Switch) itemView.findViewById(R.id.switch1);
             img = (ImageView) itemView.findViewById(R.id.image_status);
+            nm = (TextView) itemView.findViewById(R.id.nombre_con);
         }
     }
 }
