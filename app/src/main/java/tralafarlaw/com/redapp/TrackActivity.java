@@ -77,8 +77,8 @@ public class TrackActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Snackbar.make(view, "Permiso de Logout concedido", Snackbar.LENGTH_LONG)
-                  //      .setAction("Action", null).show();
+                Snackbar.make(view, "Permiso de Logout concedido", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
 
                 reference.addValueEventListener(new ValueEventListener() {
                     @Override
