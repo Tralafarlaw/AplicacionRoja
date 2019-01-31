@@ -1,9 +1,12 @@
 package tralafarlaw.com.redapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -14,6 +17,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.NumberPicker;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -29,6 +33,7 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,9 +48,8 @@ public class TrackActivity extends AppCompatActivity
     final String user_name = mail.substring(0,mail.length()-10);
     List<String> nombres = new ArrayList<>();
     MapView map;
-
-
-
+    RecyclerView rv;
+    TextView nom, mal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,36 +73,40 @@ public class TrackActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-        names = navigationView.getMenu();
         init();
 
         instanciar_nombres();
 
-        //instaciar_marcadores();
+
+        instaciar_marcadores();
 
 
 
 
     }
     public void instaciar_marcadores (){
+
         reference.child("blue").child("conductores").addValueEventListener(new mark(map, nombres, this));
-
-
         for (Overlay overlay:
                 map.getOverlays()){
             Marker mk = (Marker) overlay;
             map.getController().setCenter(mk.getPosition());
             break;
         }
+        rv.setAdapter(new MenuAdapter(nombres, map));
+        rv.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+        rv.setHasFixedSize(true);
     }
     public void init (){
         map =(MapView) findViewById(R.id.map);
         map.setMultiTouchControls(true);
         map.getController().setZoom(19.3);
         map.setTileSource(TileSourceFactory.MAPNIK);
-
+        rv = findViewById(R.id.list_names);
+        nom = findViewById(R.id.nav_name);
+        nom.setText(user_name);
+        mal = findViewById(R.id.nav_mail);
+        mal.setText(mail);
     }
     public void instanciar_nombres (){
         reference.child("red").child("usuarios").child(user_name).addListenerForSingleValueEvent(
@@ -108,8 +116,8 @@ public class TrackActivity extends AppCompatActivity
                 for (DataSnapshot data :
                         dataSnapshot.getChildren()) {
                     String q = data.getValue(String.class);
-                    names.add(q);
-                    nombres.add(q+"");
+                    nombres.add(q);
+
                 }
                 instaciar_marcadores();
                 int i = map.getOverlays().size();
@@ -126,6 +134,7 @@ public class TrackActivity extends AppCompatActivity
 
             }
         });
+        instaciar_marcadores();
     }
 
     @Override
@@ -154,6 +163,9 @@ public class TrackActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+                    FirebaseAuth.getInstance().signOut();
+                    Intent it = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(it);
             return true;
         }
 
@@ -211,6 +223,8 @@ class mark implements ValueEventListener{
                             marker.setIcon(act.getResources().getDrawable(R.drawable.verde));
                         }else if(st ==2){
                             marker.setIcon(act.getResources().getDrawable(R.drawable.naranja));
+                        }else if (st == -1){
+                            marker.setIcon(act.getResources().getDrawable(R.drawable.plomo));
                         }
                         else {
                             marker.setIcon(act.getResources().getDrawable(R.drawable.rojo));
@@ -228,6 +242,8 @@ class mark implements ValueEventListener{
                             mk.setIcon(act.getResources().getDrawable(R.drawable.verde));
                         }else if(st ==2){
                             mk.setIcon(act.getResources().getDrawable(R.drawable.naranja));
+                        }else if (st == -1){
+                            mk.setIcon(act.getResources().getDrawable(R.drawable.plomo));
                         }
                         else {
                             mk.setIcon(act.getResources().getDrawable(R.drawable.rojo));
