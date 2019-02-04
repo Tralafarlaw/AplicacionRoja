@@ -55,6 +55,8 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if(dataSnapshot.getValue(Integer.class)==-1){
                     elHolder.img.setImageResource(R.drawable.menu_ico_off);
+                }else{
+                    elHolder.img.setImageResource(R.drawable.menu_ico_on);
                 }
             }
 
