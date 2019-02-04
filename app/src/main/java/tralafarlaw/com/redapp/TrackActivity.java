@@ -1,10 +1,15 @@
 package tralafarlaw.com.redapp;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -81,6 +86,35 @@ public class TrackActivity extends AppCompatActivity
 
         instaciar_marcadores();
         instanciarLogout();
+
+
+
+
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for(int i=0; i<nombres.size(); i++)
+                {
+                    if(dataSnapshot.child("blue").child("conductores").child(nombres.get(i)).child("Status").getValue(Integer.class) == -1)
+                    {
+                        notificacion(nombres.get(i));
+
+
+                    }
+
+                }
+
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -176,6 +210,24 @@ public class TrackActivity extends AppCompatActivity
 
 
 
+    }
+
+    public void notificacion(String userX)
+    {
+        NotificationCompat.Builder notificacion = new NotificationCompat.Builder(this)
+                .setSmallIcon(android.R.drawable.stat_sys_warning)
+                .setLargeIcon((((BitmapDrawable) getResources()
+                        .getDrawable(R.drawable.ic_launcher_background)).getBitmap()))
+                .setContentTitle("Solicitud de logout")
+                .setContentText(userX + " desea desconectarse")
+                .setTicker("Prueba de ticker")
+                .setContentInfo("Pulsa aqui para abrir");
+        Intent intent = new Intent(this, MainActivity.class);
+        PendingIntent intent2 = PendingIntent.getActivity(this, 0, intent,0);
+
+        notificacion.setContentIntent(intent2);
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.notify(10,notificacion.build());
     }
 
     public void instaciar_marcadores (){
