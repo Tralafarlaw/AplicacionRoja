@@ -357,7 +357,7 @@ public class TrackActivity extends AppCompatActivity
                             int min_A, min_B;
                             min_A = (t[0]*60)+t[1];
                             min_B = (g[0]*60)+g[1];
-                            if(Math.abs(min_A-min_B)>=TIME_LIMIT){
+                            if(Math.abs(min_A-min_B)>=TIME_LIMIT && dataSnapshot.child("Status").getValue(Integer.class) != -1){
 
                                 reference.child("blue").child("conductores").child(a).child("Status").setValue(3, new DatabaseReference.CompletionListener() {
                                     @Override
