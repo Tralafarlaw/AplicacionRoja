@@ -66,6 +66,19 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ElHolder> {
             }
         });
         final int j = i;
+        elHolder.img.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                for (Overlay overlay:
+                        mapa.getOverlays()){
+                    Marker mk = (Marker) overlay;
+                    if(mk.getTitle().equals(nombres.get(j))){
+                        mapa.getController().setCenter(mk.getPosition());
+                    }
+                }
+                drawer.closeDrawer(GravityCompat.START);
+            }
+        });
         elHolder.aSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

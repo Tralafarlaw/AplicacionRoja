@@ -3,10 +3,13 @@ package tralafarlaw.com.redapp;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.Time;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -50,6 +53,7 @@ public class TrackActivity extends AppCompatActivity
     MapView map;
     RecyclerView rv;
     TextView nom, mal;
+    final int TIME_LIMIT = 10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,6 +147,7 @@ public class TrackActivity extends AppCompatActivity
 
                 }
                 instaciar_marcadores();
+                verificar_hora();
                 int i = map.getOverlays().size();
                 for (Overlay overlay:
                         map.getOverlays()){
@@ -160,13 +165,63 @@ public class TrackActivity extends AppCompatActivity
         instaciar_marcadores();
     }
 
+    public  void verificar_hora (){
+        Time hoy = new Time(Time.getCurrentTimezone());
+        hoy.setToNow();
+        String fecha = Integer.toString(hoy.hour) + ":" + Integer.toString(hoy.minute) + ":" + Integer.toString(hoy.second);
+        reference.child("blue").child("conductores").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot data:
+                        dataSnapshot.getChildren()){
+                    String n = data.child("Nombre").getValue(String.class);
+                    String h = data.child("Hora").getValue(String.class);
+                    for (String a :
+                            nombres) {
+                        if (a.equals(n)) {
+                            Time hoy = new Time(Time.getCurrentTimezone());
+                            String hv = data.child("Hora").getValue(String.class);
+                            hoy.setToNow();
+                            int[] t = new int[3];
+                            String[] f = hv.split(":");
+                            t[0]=hoy.hour;
+                            t[1]=hoy.minute;
+                            t[2]=hoy.second;
+                            int[] g = new int[3];
+                            g[0]=Integer.parseInt(f[0]);
+                            g[1]=Integer.parseInt(f[1]);
+                            g[2]=Integer.parseInt(f[2]);
+                            int min_A, min_B;
+                            min_A = (t[0]*60)+t[1];
+                            min_B = (g[0]*60)+g[1];
+                            if(Math.abs(min_A-min_B)>=TIME_LIMIT){
+
+                                reference.child("blue").child("conductores").child(a).child("Status").setValue(3, new DatabaseReference.CompletionListener() {
+                                    @Override
+                                    public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
+                                        Log.d("Listo", "Enviado");
+                                    }
+                                });
+                            }
+
+                        }
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+    }
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
-
         }
     }
 
@@ -227,6 +282,7 @@ class mark implements ValueEventListener{
         for (DataSnapshot data :
                 dataSnapshot.getChildren()) {
             String n = data.child("Nombre").getValue(String.class);
+            int st = data.child("Status").getValue(Integer.class);
             for (String a :
                     nombres) {
                 boolean sw = true;
@@ -237,20 +293,23 @@ class mark implements ValueEventListener{
                     for (Overlay overlay :
                             map.getOverlays()) {
                         Marker marker = (Marker) overlay;
-                        if(marker.getTitle().equals(n)){
-                            marker.setPosition(new GeoPoint(lat,lon));
+                        if(marker.getTitle().equals(n)) {
+                            marker.setPosition(new GeoPoint(lat, lon));
                             sw = false;
-                        }
-                        int st = data.child("Status").getValue(Integer.class);
-                        if(st == 1){
-                            marker.setIcon(act.getResources().getDrawable(R.drawable.verde));
-                        }else if(st ==2){
-                            marker.setIcon(act.getResources().getDrawable(R.drawable.naranja));
-                        }else if (st == -1){
-                            marker.setIcon(act.getResources().getDrawable(R.drawable.plomo));
-                        }
-                        else {
-                            marker.setIcon(act.getResources().getDrawable(R.drawable.rojo));
+                            switch (st) {
+                                case (1):
+                                        marker.setIcon(act.getResources().getDrawable(R.drawable.verde));
+                                    break;
+                                case (2):
+                                        marker.setIcon(act.getResources().getDrawable(R.drawable.naranja));
+                                    break;
+                                case (3):
+                                        marker.setIcon(act.getResources().getDrawable(R.drawable.rojo));
+                                    break;
+                                default:
+                                        marker.setIcon(act.getResources().getDrawable(R.drawable.plomo));
+                                    break;
+                            }
                         }
 
                     }
@@ -260,22 +319,19 @@ class mark implements ValueEventListener{
 
                         mk.setTitle(n);
                         mk.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                        int st = data.child("Status").getValue(Integer.class);
-                        if(st == 1){
-                            mk.setIcon(act.getResources().getDrawable(R.drawable.verde));
-                        }else if(st ==2){
-                            mk.setIcon(act.getResources().getDrawable(R.drawable.naranja));
-                        }else if (st == -1){
-                            mk.setIcon(act.getResources().getDrawable(R.drawable.plomo));
-                        }
-                        else {
-                            mk.setIcon(act.getResources().getDrawable(R.drawable.rojo));
+
+                        switch (st){
+                            case (1): mk.setIcon(act.getResources().getDrawable(R.drawable.verde));
+                                break;
+                            case (2): mk.setIcon(act.getResources().getDrawable(R.drawable.naranja));
+                                break;
+                            case (3): mk.setIcon(act.getResources().getDrawable(R.drawable.rojo));
+                                break;
+                            default : mk.setIcon(act.getResources().getDrawable(R.drawable.plomo));
+                                break;
                         }
                         map.getOverlays().add(mk);
-                        if(sw){
-                            map.getController().setCenter(mk.getPosition());
-                            sw = false;
-                        }
+                        map.getController().setCenter(mk.getPosition());
                         map.invalidate();
                     }
                 }
