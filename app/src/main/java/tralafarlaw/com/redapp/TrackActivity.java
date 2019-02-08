@@ -1,11 +1,17 @@
 package tralafarlaw.com.redapp;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.NotificationCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.Time;
@@ -19,9 +25,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.NumberPicker;
+import android.widget.ArrayAdapter;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -36,7 +43,6 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Overlay;
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +61,10 @@ public class TrackActivity extends AppCompatActivity
     TextView nom, mal;
     final int TIME_LIMIT = 10;
 
+    List<String> Logout = new ArrayList<>();
+
+    //List<String> ListaDescon = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,11 +74,14 @@ public class TrackActivity extends AppCompatActivity
 
 
 
+
+
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
 
         init();
 
@@ -76,15 +89,107 @@ public class TrackActivity extends AppCompatActivity
 
 
         instaciar_marcadores();
+        instanciarLogout();
+
+
+
+
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for(int i=0; i<nombres.size(); i++)
+                {
+                    if(dataSnapshot.child("blue").child("conductores").child(nombres.get(i)).child("Status").getValue(Integer.class) == -1)
+                    {
+                        notificacion(nombres.get(i));
+
+
+                    }
+
+                }
+
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                final String[] ListaDesconectados = new String[nombres.size()];
+                final boolean[] isChecked = new boolean[nombres.size()];
+                for(int i=0; i<nombres.size(); i++)
+                {
+                    ListaDesconectados[i] = nombres.get(i);
+                }
+
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(TrackActivity.this);
+                builder.setTitle("Desconectar usuarios")
+                        .setMultiChoiceItems(ListaDesconectados, null, new DialogInterface.OnMultiChoiceClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i, boolean b) {
+
+
+                                    isChecked[i] = b;
+
+
+                            }
+                        })
+                        .setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                reference.addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                        for(int j=0; j<nombres.size(); j++)
+                                        {
+                                            if(isChecked[j])
+                                            {
+                                                reference.child("blue").child("conductores").child(nombres.get(j)).child("Solicitud").setValue(1);
+
+                                            }
+                                        }
+
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                    }
+                                });
+
+
+
+
+                            }
+                        })
+                        .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                            }
+                        });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+
+
+
+
+/*
                 Snackbar.make(view, "Permiso de Logout concedido", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
 
-                reference.addValueEventListener(new ValueEventListener() {
+                reference.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                         for(int i=0; i<nombres.size(); i++)
@@ -102,13 +207,31 @@ public class TrackActivity extends AppCompatActivity
                     public void onCancelled(@NonNull DatabaseError databaseError) {
 
                     }
-                });
+                });*/
             }
         });
 
 
 
 
+    }
+
+    public void notificacion(String userX)
+    {
+        NotificationCompat.Builder notificacion = new NotificationCompat.Builder(this)
+                .setSmallIcon(android.R.drawable.stat_sys_warning)
+                .setLargeIcon((((BitmapDrawable) getResources()
+                        .getDrawable(R.drawable.ic_launcher_background)).getBitmap()))
+                .setContentTitle("Solicitud de logout")
+                .setContentText(userX + " desea desconectarse")
+                .setTicker("Prueba de ticker")
+                .setContentInfo("Pulsa aqui para abrir");
+        Intent intent = new Intent(this, MainActivity.class);
+        PendingIntent intent2 = PendingIntent.getActivity(this, 0, intent,0);
+
+        notificacion.setContentIntent(intent2);
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        nm.notify(10,notificacion.build());
     }
 
     public void instaciar_marcadores (){
@@ -162,6 +285,7 @@ public class TrackActivity extends AppCompatActivity
 
             }
         });
+
         instaciar_marcadores();
     }
 
@@ -217,6 +341,32 @@ public class TrackActivity extends AppCompatActivity
         });
 
     }
+    public void instanciarLogout()
+    {/*
+
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for(int i=0; i<nombres.size(); i++)
+                {
+                    //if(dataSnapshot.child("blue").child("conductores").child(nombres.get(i)).child("Status").getValue(Integer.class) == -1)
+                    //{
+                        Logout.add(nombres.get(i));
+                        //ListaDesconectados[i] = nombres.get(i);
+                    //}
+                }
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });*/
+
+
+    }
+
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
