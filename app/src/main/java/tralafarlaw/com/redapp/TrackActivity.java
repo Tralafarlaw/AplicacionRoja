@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -12,11 +13,13 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -73,16 +76,30 @@ public class TrackActivity extends AppCompatActivity
 
     private final static String CHANNEL_ID = "NOTIFICACION";
     private final static int NOTIFICACION_ID = 0;
+    private PendingIntent pendingIntent;
+
+    SwipeRefreshLayout swipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track);
+
+        swipeRefreshLayout = findViewById(R.id.swipe);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
+                }, 4000);
+            }
+        });
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-
-
 
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -112,6 +129,7 @@ public class TrackActivity extends AppCompatActivity
                     if(dataSnapshot.child("blue").child("conductores").child(nombres.get(i)).child("Status").getValue(Integer.class) == -1)
                     {
                         //notificacion(nombres.get(i));
+                        //setPendingIntent();
                         createNotificationChannel();
                         createNotification(nombres.get(i));
 
@@ -228,6 +246,18 @@ public class TrackActivity extends AppCompatActivity
 
     }
 
+    private void setPendingIntent()
+    {
+        Intent intent = new Intent(this, TrackActivity.class);
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        /*stackBuilder.addParentStack(TrackActivity.class);*/
+        stackBuilder.addNextIntent(intent);
+        pendingIntent = stackBuilder.getPendingIntent(1, PendingIntent.FLAG_UPDATE_CURRENT);
+
+
+    }
+
     private void createNotificationChannel()
     {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -248,8 +278,15 @@ public class TrackActivity extends AppCompatActivity
         builder.setColor(Color.BLUE);
         builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
         builder.setLights(Color.MAGENTA, 1000, 1000);
-        builder.setVibrate(new long[]{1000, 1000, 1000, 1000});
+        //builder.setVibrate(new long[]{1000, 0});
         builder.setDefaults(Notification.DEFAULT_SOUND);
+
+        //builder.setContentIntent(pendingIntent);
+        Intent intent = new Intent(this, MainActivity.class);
+        PendingIntent intent2 = PendingIntent.getActivity(this, 0, intent,0);
+
+        builder.setContentIntent(intent2);
+        builder.setAutoCancel(true);
 
         NotificationManagerCompat notifactionManagerCompat = NotificationManagerCompat.from(getApplicationContext());
         notifactionManagerCompat.notify(NOTIFICACION_ID, builder.build());
