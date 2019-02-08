@@ -1,16 +1,22 @@
 package tralafarlaw.com.redapp;
 
+import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -65,6 +71,9 @@ public class TrackActivity extends AppCompatActivity
 
     //List<String> ListaDescon = new ArrayList<>();
 
+    private final static String CHANNEL_ID = "NOTIFICACION";
+    private final static int NOTIFICACION_ID = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -102,7 +111,10 @@ public class TrackActivity extends AppCompatActivity
                 {
                     if(dataSnapshot.child("blue").child("conductores").child(nombres.get(i)).child("Status").getValue(Integer.class) == -1)
                     {
-                        notificacion(nombres.get(i));
+                        //notificacion(nombres.get(i));
+                        createNotificationChannel();
+                        createNotification(nombres.get(i));
+
 
 
                     }
@@ -216,6 +228,33 @@ public class TrackActivity extends AppCompatActivity
 
     }
 
+    private void createNotificationChannel()
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        {
+            CharSequence name = "Notificacion";
+            NotificationChannel notificationChannel = new NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel(notificationChannel);
+        }
+    }
+
+    public void createNotification(String userX)
+    {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
+        builder.setSmallIcon(R.drawable.ic_menu_send);
+        builder.setContentTitle("Solicitud de logout");
+        builder.setContentText(userX + " desea desconectarse");
+        builder.setColor(Color.BLUE);
+        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        builder.setLights(Color.MAGENTA, 1000, 1000);
+        builder.setVibrate(new long[]{1000, 1000, 1000, 1000});
+        builder.setDefaults(Notification.DEFAULT_SOUND);
+
+        NotificationManagerCompat notifactionManagerCompat = NotificationManagerCompat.from(getApplicationContext());
+        notifactionManagerCompat.notify(NOTIFICACION_ID, builder.build());
+    }
+
     public void notificacion(String userX)
     {
         NotificationCompat.Builder notificacion = new NotificationCompat.Builder(this)
@@ -224,7 +263,7 @@ public class TrackActivity extends AppCompatActivity
                         .getDrawable(R.drawable.ic_launcher_background)).getBitmap()))
                 .setContentTitle("Solicitud de logout")
                 .setContentText(userX + " desea desconectarse")
-                .setTicker("Prueba de ticker")
+                .setTicker("Un usuario desea desconectarse")
                 .setContentInfo("Pulsa aqui para abrir");
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent intent2 = PendingIntent.getActivity(this, 0, intent,0);
